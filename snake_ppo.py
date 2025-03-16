@@ -194,10 +194,6 @@ class SnakeGame:
         A balanced reward function for snake that works at all sizes and prevents loops.
         Uses a hierarchical reward system with size-adaptive components.
         """
-        # Win condition: Huge reward!
-        if self.won:
-            return 10.0
-            
         # Extract state information.
         head_pos = self.head_position
         food_pos = self.food_position
