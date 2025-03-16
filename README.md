@@ -122,6 +122,57 @@ This reward function allows the agent to learn complex strategies including:
 
 The reward values are carefully balanced to ensure that no single component dominates the learning process, resulting in an agent that can effectively navigate the full gameplay loop from small to large snake sizes.
 
+### State Representation
+
+The game state is encoded using a sophisticated grid representation that preserves both spatial information and temporal body ordering:
+
+#### Grid Encoding
+
+The 6×6 grid is represented internally as a 2D array with a consistent encoding scheme that creates a "temporal gradient" along the snake's body:
+
+- **0**: Empty cell
+- **1**: Food cell
+- **2**: Snake head (always constant)
+- **3 to n²+1**: Snake body segments with a clever encoding pattern
+
+The snake's body encoding uses a formula of `n*m + 1 - i` where:
+- `n*m` is the total grid size (36 for a 6×6 grid)
+- `i` is the position index when iterating from tail to head
+
+This creates a consistent pattern where:
+- The tail always starts at the highest value (n*m + 1 = 37)
+- Each segment closer to the head decrements by 1
+- The segment just before the head always has the value 3
+- The head is always 2
+
+When the snake grows after eating food:
+1. A new head is added (always value 2)
+2. All existing body segments shift down and are re-encoded
+3. The tail maintains the highest value
+
+This clever encoding scheme provides several advantages:
+- Direction information is implicitly encoded (gradient always flows tail→head)
+- Agent can determine exact body configuration from a single frame
+- Head and food detection remain constant regardless of snake length
+- Encoding is invariant to snake growth, ensuring consistent learning
+
+The "temporal gradient" enables the network to understand the snake's movement direction and potential future positions without requiring multiple time steps as input.
+
+#### One-Hot Transformation
+
+To create a format suitable for the neural network, the grid undergoes a one-hot encoding transformation:
+1. Each cell value is converted to a binary vector of length (n²+2) [38 for a 6×6 grid]
+2. This creates a 3D tensor of shape (6, 6, 38)
+3. The tensor is flattened to a 1D vector of length 1368
+
+This encoding method provides several advantages:
+- Preserves spatial relationships between grid elements
+- Distinguishes between all possible snake body configurations
+- Ensures equal neural network attention to all state elements
+- Eliminates any implicit ordinal relationships between state values
+
+The detailed state representation enables the agent to learn subtle patterns that would be impossible with simpler encodings, such as recognizing when the snake is about to trap itself or determining the optimal path to the food while avoiding its own body.
+
 ### Environment
 
 - 6x6 grid for the Snake game
