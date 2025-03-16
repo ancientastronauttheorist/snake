@@ -97,7 +97,7 @@ snake/
 
 ```
 PPO(
-  (fc1): Linear(in_features=222, out_features=256)
+  (fc1): Linear(in_features=1368, out_features=256)
   (norm1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
   (fc2): Linear(in_features=256, out_features=128)
   (norm2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
