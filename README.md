@@ -86,6 +86,42 @@ snake/
 
 ## Technical Details
 
+### Reward Function Deep Dive
+
+The heart of this implementation is the meticulously crafted reward function that enables sophisticated emergent behaviors. Unlike many simplistic RL Snake implementations that only reward food collection, this system uses a hierarchical, adaptive approach:
+
+#### Phase-Based Adaptive Rewards
+- **Small Snake Phase** (< 25% of grid): Emphasizes path optimization with higher path improvement rewards
+- **Medium Snake Phase** (25-60% of grid): Balances between path optimization and safety
+- **Large Snake Phase** (> 60% of grid): Prioritizes space management and safety over direct path following
+
+#### Dual Strategy System
+1. **Path-Following Strategy**
+   - When a path to food exists, rewards are proportional to path length improvements
+   - Rewards are scaled based on snake size to ensure appropriate risk-taking
+   - Maintains "shortest path memory" to prevent oscillating behaviors
+
+2. **Space-Creation Strategy**
+   - Automatically engages when no path to food exists
+   - Uses BFS to count reachable cells and rewards increasing accessible space
+   - Incorporates "lookahead" that simulates future tail movement to avoid dead ends
+   - Features diminishing returns based on time spent without a path to prevent endless loops
+
+#### Safety and Efficiency Components
+- **Safety Bonus**: Rewards having multiple safe movement options proportional to snake size
+- **Time Pressure**: Small penalties for each step to encourage efficiency
+- **Death Penalty**: Scales with progress to make later-game deaths more impactful
+- **Food Reward**: Scales with progress to make later-game food more valuable
+
+This reward function allows the agent to learn complex strategies including:
+- Creating escape routes when trapped
+- Efficient food collection patterns
+- Wall-following behaviors when appropriate
+- Curling techniques to maximize space utilization
+- Self-avoidance without explicit programming
+
+The reward values are carefully balanced to ensure that no single component dominates the learning process, resulting in an agent that can effectively navigate the full gameplay loop from small to large snake sizes.
+
 ### Environment
 
 - 6x6 grid for the Snake game
