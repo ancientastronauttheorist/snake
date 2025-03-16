@@ -9,7 +9,7 @@ A reinforcement learning implementation of the classic Snake game using Proximal
 
 ## Demo
 
-[Include a GIF or screenshot of the agent playing Snake]
+TODO: Include a GIF or screenshot of the agent playing Snake
 
 ## Features
 
@@ -41,8 +41,8 @@ A reinforcement learning implementation of the classic Snake game using Proximal
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/snake-ai-ppo.git
-cd snake-ai-ppo
+git clone https://github.com/ancientastronauttheorist/snake.git
+cd snake
 
 # Install dependencies
 pip install torch numpy pygame
@@ -76,8 +76,8 @@ python snake_ppo.py --mode play
 ## Project Structure
 
 ```
-snake-ai-ppo/
-├── snake_ppo.py         # Main code file with environment, agent and training logic
+snake/
+├── snake.py             # Main code file with environment, agent and training logic
 ├── snake_model_best.pt  # Best performing model (created during training)
 ├── snake_model_optimized.pt # Latest model (created during training)
 ├── README.md            # This file
