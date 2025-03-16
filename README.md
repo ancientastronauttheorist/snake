@@ -77,7 +77,7 @@ python snake_ppo.py --mode play
 
 ```
 snake/
-├── snake.py             # Main code file with environment, agent and training logic
+├── snake_ppo.py             # Main code file with environment, agent and training logic
 ├── snake_model_best.pt  # Best performing model (created during training)
 ├── snake_model_optimized.pt # Latest model (created during training)
 ├── README.md            # This file
