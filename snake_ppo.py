@@ -681,9 +681,44 @@ def play_game(model_path="snake_model_optimized.pt"):
     pygame.quit()
 
 # =============================================================================
+# Functions to save and load training metadata
+# =============================================================================
+def save_training_metadata(metadata, filename="training_metadata.json"):
+    """Save training metadata to a JSON file."""
+    import json
+    with open(filename, 'w') as f:
+        json.dump(metadata, f)
+    print(f"Training metadata saved to {filename}")
+
+def load_training_metadata(filename="training_metadata.json"):
+    """Load training metadata from a JSON file if it exists."""
+    import json
+    default_metadata = {
+        "episodes_trained": 0,
+        "best_avg_score": 0,
+        "highest_score": 0,
+        "wins": 0,
+        "recent_scores": [],
+        "recent_lengths": []
+    }
+    
+    if os.path.exists(filename):
+        try:
+            with open(filename, 'r') as f:
+                metadata = json.load(f)
+            print(f"Loaded training metadata from {filename}")
+            return metadata
+        except Exception as e:
+            print(f"Error loading metadata: {e}")
+            return default_metadata
+    else:
+        print("No training metadata found, starting fresh")
+        return default_metadata
+
+# =============================================================================
 # Improved Training Loop with Experience Buffer
 # =============================================================================
-def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=True):
+def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=True, resume=True):
     env = SnakeGame(n=6, m=6)
     state_dim = env.n * env.m * (env.n * env.m + 2)
     action_dim = 4
@@ -692,6 +727,7 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
     model_file = "snake_model_optimized.pt"
     best_model_file = "snake_model_best.pt"
     win_model_file = "snake_model_win.pt"  # New file to save winning models
+    metadata_file = "training_metadata.json"
     
     if os.path.exists(model_file):
         agent.model.load_state_dict(torch.load(model_file, map_location=device))
@@ -699,12 +735,25 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
     
     print("Total model parameters:", count_parameters(agent.model))
     
+    # Load metadata if resuming training
+    metadata = load_training_metadata(metadata_file) if resume else {
+        "episodes_trained": 0,
+        "best_avg_score": 0,
+        "highest_score": 0,
+        "wins": 0,
+        "recent_scores": [],
+        "recent_lengths": []
+    }
+    
     # Training metrics
-    scores = []
-    episode_lengths = []
-    wins = 0  # Track number of wins
-    highest_score = 0
-    best_avg_score = 0
+    scores = metadata["recent_scores"][-1000:] if "recent_scores" in metadata else []
+    episode_lengths = metadata["recent_lengths"][-1000:] if "recent_lengths" in metadata else []
+    wins = metadata["wins"] if "wins" in metadata else 0
+    highest_score = metadata["highest_score"] if "highest_score" in metadata else 0
+    best_avg_score = metadata["best_avg_score"] if "best_avg_score" in metadata else 0
+    start_episode = metadata["episodes_trained"] if "episodes_trained" in metadata else 0
+    
+    print(f"Resuming from episode {start_episode} | Best avg score: {best_avg_score:.2f} | Wins: {wins}")
     
     # Experience buffer for PPO
     buffer_states = []
@@ -714,9 +763,9 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
     buffer_values = []
     buffer_dones = []
     
-    episode = 0
+    episode = start_episode
     
-    while episode < total_episodes:
+    while episode < start_episode + total_episodes:
         state = env.reset()
         done = False
         episode_reward = 0
@@ -806,6 +855,17 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
                 best_avg_score = last_100_avg
                 torch.save(agent.model.state_dict(), best_model_file)
                 print(f"New best model! Avg score: {best_avg_score:.2f}")
+            
+            # Save training metadata
+            metadata = {
+                "episodes_trained": episode,
+                "best_avg_score": best_avg_score,
+                "highest_score": highest_score,
+                "wins": wins,
+                "recent_scores": scores[-1000:],  # Keep only recent scores to limit file size
+                "recent_lengths": episode_lengths[-1000:]
+            }
+            save_training_metadata(metadata)
         
         # Update highest score
         if info.get("score", 0) > highest_score:
@@ -836,9 +896,12 @@ if __name__ == "__main__":
                         help="How often to save the model (in episodes).")
     parser.add_argument("--model_path", type=str, default="snake_model_optimized.pt",
                         help="Path to the model file to use when playing.")
+    parser.add_argument("--no_resume", action="store_true",
+                        help="If set, start training from scratch instead of resuming.")
     args = parser.parse_args()
 
     play_demo = not args.no_demo
+    resume = not args.no_resume
     state_dim = 6 * 6 * (6 * 6 + 2)
     action_dim = 4
     temp_agent = PPOAgent(state_dim, action_dim)
@@ -849,7 +912,8 @@ if __name__ == "__main__":
             total_episodes=args.episodes,
             play_demo=play_demo,
             update_freq=args.update_freq,
-            save_interval=args.save_interval
+            save_interval=args.save_interval,
+            resume=resume
         )
     else:
         play_game(args.model_path)
