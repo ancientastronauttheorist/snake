@@ -121,6 +121,7 @@ class SnakeGame:
     @property
     def game_over(self):
         return self.done
+
     # -----------------------------------------------------------------------------
     # One-hot encoding of grid state.
     # -----------------------------------------------------------------------------
@@ -133,7 +134,6 @@ class SnakeGame:
     # Helper: Find the shortest path from start to goal using BFS.
     # -----------------------------------------------------------------------------
     def find_shortest_path(self, start, goal, snake_body):
-        # If food is None (win condition), return no path
         if goal is None:
             return False, float('inf')
             
@@ -151,7 +151,6 @@ class SnakeGame:
                 if 0 <= new_pos[0] < self.n and 0 <= new_pos[1] < self.m:
                     if new_pos in visited:
                         continue
-                    # Allow the goal even if it is an obstacle.
                     if new_pos in obstacles and new_pos != goal:
                         continue
                     visited.add(new_pos)
@@ -190,11 +189,6 @@ class SnakeGame:
     # Reward Function
     # -----------------------------------------------------------------------------
     def calculate_reward(self, action):
-        """
-        A balanced reward function for snake that works at all sizes and prevents loops.
-        Uses a hierarchical reward system with size-adaptive components.
-        """
-        # Extract state information.
         head_pos = self.head_position
         food_pos = self.food_position
         snake_body = self.snake_body
@@ -204,7 +198,6 @@ class SnakeGame:
         
         reward = 0.0
         
-        # Base rewards/penalties.
         if self.ate_food:
             food_reward_scale = min(1.0 + (current_length / max_possible_length), 2.0)
             reward += 1.0 * food_reward_scale
@@ -215,33 +208,26 @@ class SnakeGame:
             reward -= death_penalty
             return reward
         
-        # Skip path finding if there's no food (win condition)
         if food_pos is not None:
-            # Find path to food.
             path_exists, path_length = self.find_shortest_path(head_pos, food_pos, snake_body)
-            
-            # Calculate Manhattan distance.
             manhattan_dist = abs(head_pos[0] - food_pos[0]) + abs(head_pos[1] - food_pos[1])
         else:
             path_exists = False
             path_length = float('inf')
             manhattan_dist = float('inf')
         
-        # Time pressure component.
         step_penalty = 0.01 * (1.0 + (current_length / max_possible_length * 0.5))
         reward -= step_penalty
         
         previous_path_length = getattr(self, 'previous_path_length', float('inf'))
         previous_manhattan = getattr(self, 'previous_manhattan', float('inf'))
         
-        # Determine phase based on snake size.
         small_phase = current_length < 0.25 * max_possible_length
         medium_phase = 0.25 * max_possible_length <= current_length < 0.6 * max_possible_length
         large_phase = current_length >= 0.6 * max_possible_length
         
-        # Path-following strategy.
         if path_exists:
-            self.no_path_counter = 0  # Reset loop detection.
+            self.no_path_counter = 0
             if previous_path_length != float('inf'):
                 path_improvement = previous_path_length - path_length
                 if small_phase:
@@ -252,7 +238,6 @@ class SnakeGame:
                     reward += 0.1 * path_improvement
             self.previous_path_length = path_length
             self.previous_manhattan = manhattan_dist
-        # Space-creation strategy.
         else:
             no_path_counter = getattr(self, 'no_path_counter', 0) + 1
             self.no_path_counter = no_path_counter
@@ -271,13 +256,11 @@ class SnakeGame:
                 diminishing_factor = 1.0 / (1.0 + (no_path_counter / 20.0))
                 reward += 0.1 * capped_improvement * diminishing_factor
                 
-                # Add food direction bias (only if food exists)
                 if food_pos is not None and manhattan_dist < previous_manhattan:
                     reward += 0.05
             
             self.previous_free_cells = free_cells
         
-        # Safety bonus: Encourage moves that leave multiple safe options.
         if current_length > 5:
             head_x, head_y = head_pos
             safe_moves = 0
@@ -298,7 +281,6 @@ class SnakeGame:
             return self.get_state(), 0, True, {"score": self.score, "won": self.won}
         
         head = self.snake[0]
-        # Map action to movement vector.
         if action == 0:
             move_vector = (-1, 0)
         elif action == 1:
@@ -310,7 +292,6 @@ class SnakeGame:
         else:
             move_vector = (0, 0)
         
-        # Prevent 180° turns.
         if len(self.snake) > 1:
             second = self.snake[1]
             current_direction = (head[0] - second[0], head[1] - second[1])
@@ -320,17 +301,14 @@ class SnakeGame:
         
         new_head = (head[0] + move_vector[0], head[1] + move_vector[1])
         
-        # Check wall collision.
         if not (0 <= new_head[0] < self.n and 0 <= new_head[1] < self.m):
             self.done = True
             return self.get_state(), -1.0, True, {"score": self.score, "won": self.won}
         
-        # Check self-collision.
         if new_head in self.snake and new_head != self.snake[-1]:
             self.done = True
             return self.get_state(), -1.0, True, {"score": self.score, "won": self.won}
         
-        # Process movement.
         ate_food = (new_head == self.food)
         self.snake.appendleft(new_head)
         if ate_food:
@@ -343,19 +321,15 @@ class SnakeGame:
             self._ate_food = False
             self.score = len(self.snake)
         
-        # End game if too many steps without food.
         if not ate_food and self.steps_since_food > self.n * self.m:
             self.done = True
             return self.get_state(), -1.0, True, {"score": self.score, "won": self.won}
         
-        # If food was eaten, place new food.
         if ate_food:
             self.place_food()
         
-        # Calculate reward using the reward function.
         reward = self.calculate_reward(action)
         
-        # Reconstruct grid.
         self.grid.fill(0)
         if self.food is not None:
             self.grid[self.food] = 1
@@ -369,26 +343,34 @@ class SnakeGame:
         return self.get_state(), reward, self.done, {"score": self.score, "won": self.won}
 
     # -----------------------------------------------------------------------------
-    # Render the game using Pygame.
+    # Updated Render Function using a modern, dark theme.
     # -----------------------------------------------------------------------------
     def render(self, screen, cell_size=30):
-        grid_width = self.m * cell_size
-        grid_height = self.n * cell_size
-        grid_rect = pygame.Rect(0, 0, grid_width, grid_height)
-        pygame.draw.rect(screen, (0, 0, 0), grid_rect)
-        colors = {0: (255, 255, 255), 1: (255, 0, 0)}
+        # Fill the screen with a dark background.
+        screen.fill((30, 30, 30))
         for i in range(self.n):
             for j in range(self.m):
-                cell = self.grid[i, j]
-                if cell == 0:
-                    color = colors[0]
-                elif cell == 1:
-                    color = colors[1]
+                x = j * cell_size
+                y = i * cell_size
+                cell_rect = pygame.Rect(x, y, cell_size, cell_size)
+                # Empty cell.
+                if self.grid[i, j] == 0:
+                    bg_color = (50, 50, 50)
+                    pygame.draw.rect(screen, bg_color, cell_rect, border_radius=8)
+                # Food.
+                elif self.grid[i, j] == 1:
+                    center = (x + cell_size // 2, y + cell_size // 2)
+                    radius = cell_size // 3
+                    pygame.draw.circle(screen, (200, 30, 30), center, radius)
+                # Snake segments.
                 else:
-                    color = (0, 255, 0) if cell == 2 else (0, 100, 255)
-                r = pygame.Rect(j * cell_size, i * cell_size, cell_size, cell_size)
-                pygame.draw.rect(screen, color, r)
-                pygame.draw.rect(screen, (50, 50, 50), r, 1)
+                    if self.grid[i, j] == 2:
+                        color = (255, 215, 0)  # Gold for the head.
+                    else:
+                        color = (0, 200, 0)   # Vibrant green for the body.
+                    pygame.draw.rect(screen, color, cell_rect, border_radius=8)
+                # Draw a subtle border.
+                pygame.draw.rect(screen, (80, 80, 80), cell_rect, 2, border_radius=8)
 
 # =============================================================================
 # Optimized PPO Neural Network
@@ -396,7 +378,6 @@ class SnakeGame:
 class PPO(nn.Module):
     def __init__(self, input_dim, output_dim=4):
         super(PPO, self).__init__()
-        # More appropriate architecture for a 6x6 grid
         self.fc1 = nn.Linear(input_dim, 256)
         self.norm1 = nn.LayerNorm(256)
         self.fc2 = nn.Linear(256, 128)
@@ -422,12 +403,11 @@ class PPOAgent:
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
         self.clip_param = clip_param
         self.gamma = gamma
-        self.lam = lam  # GAE lambda parameter
-        self.entropy_coef = 0.01  # Start with lower entropy
+        self.lam = lam
+        self.entropy_coef = 0.01
         self.value_coef = 0.5
-        self.max_grad_norm = 0.5  # Gradient clipping
+        self.max_grad_norm = 0.5
         
-        # Learning rate scheduler
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=1000, gamma=0.95)
 
     def select_action(self, state, deterministic=False):
@@ -435,17 +415,14 @@ class PPOAgent:
         with torch.no_grad():
             policy_logits, value = self.model(state_tensor)
             probs = F.softmax(policy_logits, dim=-1)
-            
             if deterministic:
                 action = torch.argmax(probs).item()
                 return action, None, value
-                
             dist = torch.distributions.Categorical(probs)
             action = dist.sample()
             return action.item(), dist.log_prob(action), value
 
     def compute_gae(self, rewards, values, dones, next_value):
-        """Compute Generalized Advantage Estimation"""
         advantages = torch.zeros_like(rewards)
         last_gae = 0
         
@@ -464,7 +441,6 @@ class PPOAgent:
         return advantages, returns
 
     def update(self, states, actions, old_log_probs, rewards, values, dones, next_value):
-        # Convert to tensors
         states = torch.stack(states).to(device)
         actions = torch.tensor(actions).to(device)
         old_log_probs = torch.stack(old_log_probs).detach().to(device)
@@ -472,13 +448,9 @@ class PPOAgent:
         values = torch.stack(values).detach().squeeze().to(device)
         dones = torch.tensor(dones, dtype=torch.float32).to(device)
         
-        # Compute GAE
         advantages, returns = self.compute_gae(rewards, values, dones, next_value)
-        
-        # Normalize advantages
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-        # PPO update (with minibatches)
         batch_size = states.size(0)
         minibatch_size = batch_size // 4
         if minibatch_size < 1:
@@ -489,9 +461,7 @@ class PPOAgent:
         entropy_losses = []
         
         for _ in range(4):  # 4 epochs
-            # Shuffle data
             indices = torch.randperm(batch_size)
-            
             for start in range(0, batch_size, minibatch_size):
                 end = start + minibatch_size
                 if end > batch_size:
@@ -505,26 +475,20 @@ class PPOAgent:
                 mb_advantages = advantages[mb_indices]
                 mb_returns = returns[mb_indices]
                 
-                # Forward pass
                 policy_logits, value_estimates = self.model(mb_states)
                 probs = F.softmax(policy_logits, dim=-1)
                 dist = torch.distributions.Categorical(probs)
                 new_log_probs = dist.log_prob(mb_actions)
                 entropy = dist.entropy().mean()
                 
-                # Compute ratio and clipped ratio
                 ratio = torch.exp(new_log_probs - mb_old_log_probs)
                 surr1 = ratio * mb_advantages
                 surr2 = torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param) * mb_advantages
                 
-                # Compute losses
                 policy_loss = -torch.min(surr1, surr2).mean()
                 value_loss = F.mse_loss(value_estimates.squeeze(), mb_returns)
-                
-                # Total loss
                 loss = policy_loss + self.value_coef * value_loss - self.entropy_coef * entropy
                 
-                # Backprop and optimize
                 self.optimizer.zero_grad()
                 loss.backward()
                 nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
@@ -534,9 +498,8 @@ class PPOAgent:
                 value_losses.append(value_loss.item())
                 entropy_losses.append(entropy.item())
                 
-        # Update learning rate and entropy coefficient
         self.scheduler.step()
-        self.entropy_coef = max(0.01, self.entropy_coef * 0.995)  # Decay entropy coefficient
+        self.entropy_coef = max(0.01, self.entropy_coef * 0.995)
             
         return {
             'policy_loss': np.mean(policy_losses),
@@ -551,7 +514,7 @@ def play_game_once(model_path="snake_model_optimized.pt"):
     pygame.init()
     cell_size = 40
     grid_size = (6, 6)
-    text_area = 90  # For three lines: score, action, reward.
+    text_area = 90  # Area for score, action, reward info.
     screen_width = grid_size[1] * cell_size
     screen_height = grid_size[0] * cell_size + text_area
     screen = pygame.display.set_mode((screen_width, screen_height))
@@ -576,8 +539,6 @@ def play_game_once(model_path="snake_model_optimized.pt"):
     done = False
     current_action = ""
     current_reward = 0.0
-    demo_rewards = []
-    demo_values = []
 
     while not done:
         for event in pygame.event.get():
@@ -586,30 +547,27 @@ def play_game_once(model_path="snake_model_optimized.pt"):
                 break
 
         action, _, value = agent.select_action(state, deterministic=True)
-        demo_values.append(value.item())
         current_action = action_mapping.get(action, "")
         state, reward, done, info = env.step(action)
-        demo_rewards.append(reward)
         current_reward = reward
 
         env.render(screen, cell_size=cell_size)
+        # Draw the text area with a matching dark background.
         text_rect = pygame.Rect(0, grid_size[0] * cell_size, screen_width, text_area)
-        pygame.draw.rect(screen, (0, 0, 0), text_rect)
+        pygame.draw.rect(screen, (30, 30, 30), text_rect)
         
-        # Add win message if game was won
         if info.get("won", False):
             score_text = font.render(f"GAME WON! Score: {info.get('score', 0)}", True, (0, 255, 0))
         else:
             score_text = font.render(f"Score: {info.get('score', 0)}", True, (255, 255, 255))
-            
-        action_text = font.render(f"Action: {current_action}", True, (255, 255, 255))
-        reward_text = font.render(f"Reward: {current_reward:.2f}", True, (255, 255, 255))
+        action_text = font.render(f"Action: {current_action}", True, (200, 200, 200))
+        reward_text = font.render(f"Reward: {current_reward:.2f}", True, (200, 200, 200))
+        
         screen.blit(score_text, (10, grid_size[0] * cell_size + 5))
         screen.blit(action_text, (10, grid_size[0] * cell_size + 35))
         screen.blit(reward_text, (10, grid_size[0] * cell_size + 65))
         pygame.display.flip()
-        clock.tick(4)  # Speed up the demo a bit
-
+        clock.tick(4)
     pygame.time.delay(1000)
     pygame.quit()
 
@@ -656,16 +614,14 @@ def play_game(model_path="snake_model_optimized.pt"):
 
         env.render(screen, cell_size=cell_size)
         text_rect = pygame.Rect(0, grid_size[0] * cell_size, screen_width, text_area)
-        pygame.draw.rect(screen, (0, 0, 0), text_rect)
+        pygame.draw.rect(screen, (30, 30, 30), text_rect)
         
-        # Add win message if game was won
         if info.get("won", False):
             score_text = font.render(f"GAME WON! Score: {info.get('score', 0)}", True, (0, 255, 0))
         else:
             score_text = font.render(f"Score: {info.get('score', 0)}", True, (255, 255, 255))
-            
-        action_text = font.render(f"Action: {current_action}", True, (255, 255, 255))
-        reward_text = font.render(f"Reward: {current_reward:.2f}", True, (255, 255, 255))
+        action_text = font.render(f"Action: {current_action}", True, (200, 200, 200))
+        reward_text = font.render(f"Reward: {current_reward:.2f}", True, (200, 200, 200))
         screen.blit(score_text, (10, grid_size[0] * cell_size + 5))
         screen.blit(action_text, (10, grid_size[0] * cell_size + 35))
         screen.blit(reward_text, (10, grid_size[0] * cell_size + 65))
@@ -680,14 +636,12 @@ def play_game(model_path="snake_model_optimized.pt"):
 # Functions to save and load training metadata
 # =============================================================================
 def save_training_metadata(metadata, filename="training_metadata.json"):
-    """Save training metadata to a JSON file."""
     import json
     with open(filename, 'w') as f:
         json.dump(metadata, f)
     print(f"Training metadata saved to {filename}")
 
 def load_training_metadata(filename="training_metadata.json"):
-    """Load training metadata from a JSON file if it exists."""
     import json
     default_metadata = {
         "episodes_trained": 0,
@@ -722,7 +676,7 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
 
     model_file = "snake_model_optimized.pt"
     best_model_file = "snake_model_best.pt"
-    win_model_file = "snake_model_win.pt"  # New file to save winning models
+    win_model_file = "snake_model_win.pt"
     metadata_file = "training_metadata.json"
     
     if os.path.exists(model_file):
@@ -731,7 +685,6 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
     
     print("Total model parameters:", count_parameters(agent.model))
     
-    # Load metadata if resuming training
     metadata = load_training_metadata(metadata_file) if resume else {
         "episodes_trained": 0,
         "best_avg_score": 0,
@@ -741,7 +694,6 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
         "recent_lengths": []
     }
     
-    # Training metrics
     scores = metadata["recent_scores"][-1000:] if "recent_scores" in metadata else []
     episode_lengths = metadata["recent_lengths"][-1000:] if "recent_lengths" in metadata else []
     wins = metadata["wins"] if "wins" in metadata else 0
@@ -751,7 +703,6 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
     
     print(f"Resuming from episode {start_episode} | Best avg score: {best_avg_score:.2f} | Wins: {wins}")
     
-    # Experience buffer for PPO
     buffer_states = []
     buffer_actions = []
     buffer_log_probs = []
@@ -770,20 +721,15 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
         while not done:
             action, log_prob, value = agent.select_action(state)
             
-            # Store in buffer
             buffer_states.append(torch.tensor(state.flatten(), dtype=torch.float32))
             buffer_actions.append(action)
-            if log_prob is not None:  # Some actions might be deterministic in demo mode
+            if log_prob is not None:
                 buffer_log_probs.append(log_prob)
             else:
-                # Create a dummy log prob if needed
                 buffer_log_probs.append(torch.tensor(0.0).to(device))
             buffer_values.append(value.squeeze())
             
-            # Take action
             next_state, reward, done, info = env.step(action)
-            
-            # Store results
             buffer_rewards.append(reward)
             buffer_dones.append(done)
             
@@ -791,29 +737,23 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
             episode_reward += reward
             step_count += 1
         
-        # Episode completed
         episode += 1
         scores.append(info.get("score", 0))
         episode_lengths.append(step_count)
         
-        # Track wins
         if info.get("won", False):
             wins += 1
             print(f"WIN #{wins} at episode {episode}! Score: {info.get('score', 0)}")
-            # Save the winning model
             torch.save(agent.model.state_dict(), win_model_file)
             print(f"Saved winning model to {win_model_file}")
         
-        # Update if buffer has enough data or at the end of an episode
         if len(buffer_states) >= update_freq * 200 or episode % update_freq == 0:
-            # Get last state value for GAE calculation
             if done:
                 last_value = torch.tensor(0.0).to(device)
             else:
                 with torch.no_grad():
                     _, last_value = agent.model(torch.tensor(state.flatten(), dtype=torch.float32).to(device))
             
-            # Update policy
             losses = agent.update(
                 buffer_states, 
                 buffer_actions, 
@@ -824,7 +764,6 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
                 last_value
             )
             
-            # Clear buffer
             buffer_states = []
             buffer_actions = []
             buffer_log_probs = []
@@ -832,42 +771,36 @@ def train(total_episodes=1000000, update_freq=10, save_interval=100, play_demo=T
             buffer_values = []
             buffer_dones = []
             
-            # Log progress
             if episode % 10 == 0:
                 last_100_avg = np.mean(scores[-100:]) if len(scores) >= 100 else np.mean(scores)
                 last_100_len = np.mean(episode_lengths[-100:]) if len(episode_lengths) >= 100 else np.mean(episode_lengths)
                 print(f"Episode: {episode} | Avg Score: {last_100_avg:.2f} | Avg Length: {last_100_len:.2f} | Best: {highest_score} | Wins: {wins}")
                 print(f"Losses: Policy={losses['policy_loss']:.4f}, Value={losses['value_loss']:.4f}, Entropy={losses['entropy']:.4f}")
         
-        # Save model
         if episode % save_interval == 0:
             last_100_avg = np.mean(scores[-100:]) if len(scores) >= 100 else np.mean(scores)
             
             torch.save(agent.model.state_dict(), model_file)
             print(f"Saved model to {model_file}")
             
-            # Save best model
             if last_100_avg > best_avg_score:
                 best_avg_score = last_100_avg
                 torch.save(agent.model.state_dict(), best_model_file)
                 print(f"New best model! Avg score: {best_avg_score:.2f}")
             
-            # Save training metadata
             metadata = {
                 "episodes_trained": episode,
                 "best_avg_score": best_avg_score,
                 "highest_score": highest_score,
                 "wins": wins,
-                "recent_scores": scores[-1000:],  # Keep only recent scores to limit file size
+                "recent_scores": scores[-1000:],
                 "recent_lengths": episode_lengths[-1000:]
             }
             save_training_metadata(metadata)
         
-        # Update highest score
         if info.get("score", 0) > highest_score:
             highest_score = info.get("score", 0)
         
-        # Play demo game
         if play_demo and episode % 1000 == 0:
             print("Demo: Playing one game with current model weights...")
             play_game_once(model_file)
