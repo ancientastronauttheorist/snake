@@ -160,7 +160,7 @@ The "temporal gradient" enables the network to understand the snake's movement d
 #### One-Hot Transformation
 
 To create a format suitable for the neural network, the grid undergoes a one-hot encoding transformation:
-1. Each cell value is converted to a binary vector of length (n²+2) [38 for a 6×6 grid]
+1. Each cell value is converted to a binary vector of length (n*m+2) [38 for a 6×6 grid]
 2. This creates a 3D tensor of shape (6, 6, 38)
 3. The tensor is flattened to a 1D vector of length 1368
 
