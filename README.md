@@ -133,7 +133,7 @@ The 6×6 grid is represented internally as a 2D array with a consistent encoding
 - **0**: Empty cell
 - **1**: Food cell
 - **2**: Snake head (always constant)
-- **3 to n²+1**: Snake body segments with a clever encoding pattern
+- **3 to n*m+1**: Snake body segments with a clever encoding pattern
 
 The snake's body encoding uses a formula of `n*m + 1 - i` where:
 - `n*m` is the total grid size (36 for a 6×6 grid)
@@ -142,7 +142,6 @@ The snake's body encoding uses a formula of `n*m + 1 - i` where:
 This creates a consistent pattern where:
 - The tail always starts at the highest value (n*m + 1 = 37)
 - Each segment closer to the head decrements by 1
-- The segment just before the head always has the value 3
 - The head is always 2
 
 When the snake grows after eating food:
