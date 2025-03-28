@@ -245,3 +245,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [OpenAI's PPO Paper](https://arxiv.org/abs/1707.06347)
 - [PyTorch](https://pytorch.org/)
 - [Pygame](https://www.pygame.org/)
+- [How I Made the Best AI Snake](https://www.youtube.com/watch?v=lqpApkkqtAs) by TwoPoint Code - Inspiration for reinforcement learning approaches
