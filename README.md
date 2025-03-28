@@ -2,11 +2,6 @@
 
 A reinforcement learning implementation of the classic Snake game using Proximal Policy Optimization (PPO). This project demonstrates how to train an AI agent to play Snake at a high level through sophisticated reward engineering and modern deep reinforcement learning techniques.
 
-![Python](https://img.shields.io/badge/python-3.7+-blue.svg)
-![PyTorch](https://img.shields.io/badge/PyTorch-1.9+-red.svg)
-![Pygame](https://img.shields.io/badge/Pygame-2.0+-green.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-
 ## Demo
 
 TODO: Include a GIF or screenshot of the agent playing Snake
@@ -36,6 +31,12 @@ TODO: Include a GIF or screenshot of the agent playing Snake
   - Display of scores, actions, and rewards
   - Demo mode for watching AI play
   - Interactive mode for continuous gameplay
+
+- **Model Portability & Optimization**:
+  - Convert models between PyTorch (.pt) and portable NumPy (.npz) formats
+  - Hardware-specific optimizations for CUDA, Apple MPS, and CPU
+  - Share trained models across different systems and hardware configurations
+  - Test inference performance on your hardware
 
 ## Installation
 
@@ -73,15 +74,40 @@ python snake_ppo.py --mode play
 | `--save_interval` | How often to save the model (in episodes) | 100 |
 | `--no_demo` | If set, do not play demo games during training | False |
 
+### Model Converter Tool
+
+The project includes a model converter utility that helps with portability and optimization:
+
+```bash
+# Export PyTorch model to portable format
+python model_converter.py export --input snake_model_best.pt --output snake_model_portable.npz
+
+# Import portable model and optimize for current hardware
+python model_converter.py import --input snake_model_portable.npz --output snake_model_optimized.pt
+
+# Test model inference performance
+python model_converter.py test --input snake_model_best.pt
+
+# Run the game with a specific model
+python model_converter.py play --input snake_model_optimized.pt
+```
+
+This tool is useful when:
+- Sharing models across different hardware platforms (CUDA, Apple M1/M2, CPU)
+- Deploying to systems without PyTorch installed
+- Optimizing model performance for your specific hardware
+- Testing inference speeds before deployment
+
 ## Project Structure
 
 ```
 snake/
-├── snake_ppo.py             # Main code file with environment, agent and training logic
-├── snake_model_best.pt  # Best performing model (created during training)
-├── snake_model_optimized.pt # Latest model (created during training)
-├── README.md            # This file
-└── LICENSE              # License file
+├── snake_ppo.py              # Main code file with environment, agent and training logic
+├── model_converter.py        # Utility for model portability and optimization
+├── snake_model_best.pt       # Best performing model (created during training)
+├── snake_model_optimized.pt  # Latest model (created during training)
+├── README.md                 # This file
+└── LICENSE                   # License file
 ```
 
 ## Technical Details
