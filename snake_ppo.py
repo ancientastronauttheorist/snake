@@ -357,8 +357,7 @@ class SnakeGame:
             center = (col * cell_size + cell_size // 2, row * cell_size + cell_size // 2)
             radius = cell_size // 3
             pygame.draw.circle(screen, food_color, center, radius)
-        # Draw snake segments with a gradient from neon pink (head) to neon cyan (tail).
-            # Draw snake segments with a gradient from orange (head) to pink (tail).
+        # Draw snake segments with a gradient from orange (head) to pink (tail).
         head_color = (255, 165, 0)   # Orange
         tail_color = (255, 105, 180) # Pink
         snake_list = list(self.snake)
