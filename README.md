@@ -28,7 +28,7 @@ A reinforcement learning implementation of the classic Snake game using Proximal
 - **6x6 Grid Snake Environment**:
   - Complete game mechanics with collision detection
   - One-hot state encoding for neural network processing
-  - BFS path finding for shortest path calculations
+  - Breadth-First Search (BFS) path finding for shortest path calculations
   - Reachable cell counting for space evaluation
 
 - **Visualization**:
@@ -42,6 +42,14 @@ A reinforcement learning implementation of the classic Snake game using Proximal
   - Hardware-specific optimizations for CUDA, Apple MPS, and CPU
   - Share trained models across different systems and hardware configurations
   - Test inference performance on your hardware
+
+## TODO
+
+- **Implement Convolutional Neural Network (CNN) Architecture**:
+  - Replace current neural network with a CNN to preserve spatial relationships and better recognize game patterns
+  - Implement residual connections for improved gradient flow
+  - Compare CNN performance against the current neural network architecture
+  - Optimize CNN architecture for microcontroller (RP2040) deployment
 
 ## Installation
 
