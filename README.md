@@ -9,7 +9,7 @@ A reinforcement learning implementation of the classic Snake game using Proximal
 
 ## Demo
 
-![Snake AI Demo](./snakeAI.gif)
+<img src="./snakeAI.gif" alt="Snake AI Demo" width="50%" />
 
 ## Features
 
