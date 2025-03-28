@@ -12,19 +12,14 @@ Usage:
     
     # Import portable model and optimize for current hardware
     python model_converter.py import --input snake_model_portable.npz --output snake_model_optimized.pt
-    
-    # Run the game with the optimized model
-    python model_converter.py play --input snake_model_optimized.pt
 """
 
-import os
 import sys
 import argparse
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 
 # -----------------------------------------------------------------------------
 # Define the PPO model architecture (must match the original model)
@@ -182,132 +177,6 @@ def import_model(input_path, output_path):
         sys.exit(1)
 
 # -----------------------------------------------------------------------------
-# Simple function to test the model by loading and running inference
-# -----------------------------------------------------------------------------
-def test_model(model_path):
-    """Load a model and perform a simple inference test."""
-    device = get_optimal_device()
-    
-    # Determine if it's a portable or PyTorch model
-    is_portable = model_path.endswith('.npz')
-    
-    if is_portable:
-        # Load portable model
-        try:
-            weights = np.load(model_path)
-            if '_metadata' in weights:
-                metadata = weights['_metadata']
-                state_dim = int(metadata[0])
-                action_dim = int(metadata[1])
-            else:
-                grid_size = (6, 6)
-                state_dim = grid_size[0] * grid_size[1] * (grid_size[0] * grid_size[1] + 2)
-                action_dim = 4
-            
-            # Create model
-            model = PPO(state_dim, action_dim).to(device)
-            
-            # Load weights
-            state_dict = {}
-            for name in weights.files:
-                if name != '_metadata':
-                    param = torch.tensor(weights[name], device=device)
-                    state_dict[name] = param
-            
-            model.load_state_dict(state_dict)
-        except Exception as e:
-            print(f"Error loading portable model: {e}")
-            sys.exit(1)
-    else:
-        # Load PyTorch model
-        try:
-            grid_size = (6, 6)
-            state_dim = grid_size[0] * grid_size[1] * (grid_size[0] * grid_size[1] + 2)
-            action_dim = 4
-            
-            model = PPO(state_dim, action_dim).to(device)
-            state_dict = torch.load(model_path, map_location=device)
-            model.load_state_dict(state_dict)
-        except Exception as e:
-            print(f"Error loading PyTorch model: {e}")
-            sys.exit(1)
-    
-    # Create a dummy input and run inference
-    dummy_input = torch.rand(1, state_dim, device=device)
-    
-    # Measure inference time
-    import time
-    start_time = time.time()
-    num_iterations = 100
-    
-    with torch.no_grad():
-        for _ in range(num_iterations):
-            policy, value = model(dummy_input)
-    
-    avg_time = (time.time() - start_time) / num_iterations
-    print(f"Model loaded successfully!")
-    print(f"Average inference time: {avg_time*1000:.2f} ms")
-    print(f"Policy output shape: {policy.shape}, Value output shape: {value.shape}")
-
-# -----------------------------------------------------------------------------
-# Play game using the model (minimal implementation)
-# -----------------------------------------------------------------------------
-def play_game(model_path):
-    """
-    Play the snake game using the specified model.
-    This is a minimal implementation that will attempt to import the necessary components
-    from the original snake game code.
-    """
-    try:
-        # Try to import from the local snake game module
-        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-        
-        # First, try to import directly if running from the same directory
-        try:
-            from __main__ import SnakeGame, play_game as original_play_game
-            print("Successfully imported game components from main module")
-            
-            # If the original play_game function exists, use it
-            if model_path.endswith('.npz'):
-                print("Converting portable model to optimized format first...")
-                temp_path = "temp_optimized_model.pt"
-                import_model(model_path, temp_path)
-                original_play_game(temp_path)
-            else:
-                original_play_game(model_path)
-            return
-        except ImportError:
-            pass
-        
-        # Otherwise, look for possible module names based on common filenames
-        for module_name in ["snake_game", "snake"]:
-            try:
-                module = __import__(module_name)
-                if hasattr(module, "play_game") and hasattr(module, "SnakeGame"):
-                    print(f"Found game components in {module_name}")
-                    
-                    if model_path.endswith('.npz'):
-                        print("Converting portable model to optimized format first...")
-                        temp_path = "temp_optimized_model.pt"
-                        import_model(model_path, temp_path)
-                        module.play_game(temp_path)
-                    else:
-                        module.play_game(model_path)
-                    return
-            except ImportError:
-                continue
-        
-        # If we get here, we couldn't find the game components
-        print("Could not locate the original snake game module.")
-        print("Please run the game from the original snake game file:")
-        print("1. Convert your model: python model_converter.py import --input portable_model.npz --output optimized_model.pt")
-        print("2. Run the game: python snake_game.py --mode play --model_path optimized_model.pt")
-    
-    except Exception as e:
-        print(f"Error during play: {e}")
-        sys.exit(1)
-
-# -----------------------------------------------------------------------------
 # Main function
 # -----------------------------------------------------------------------------
 def main():
@@ -326,14 +195,6 @@ def main():
     import_parser.add_argument("--input", type=str, required=True, help="Input portable model path (.npz)")
     import_parser.add_argument("--output", type=str, required=True, help="Output optimized model path (.pt)")
     
-    # Test command
-    test_parser = subparsers.add_parser("test", help="Test a model by loading and running inference")
-    test_parser.add_argument("--input", type=str, required=True, help="Model path (.pt or .npz)")
-    
-    # Play command
-    play_parser = subparsers.add_parser("play", help="Play the game using a model")
-    play_parser.add_argument("--input", type=str, required=True, help="Model path (.pt or .npz)")
-    
     args = parser.parse_args()
     
     # Execute the appropriate command
@@ -341,10 +202,6 @@ def main():
         export_model(args.input, args.output)
     elif args.command == "import":
         import_model(args.input, args.output)
-    elif args.command == "test":
-        test_model(args.input)
-    elif args.command == "play":
-        play_game(args.input)
     else:
         parser.print_help()
 
