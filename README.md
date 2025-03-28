@@ -2,6 +2,11 @@
 
 A reinforcement learning implementation of the classic Snake game using Proximal Policy Optimization (PPO). This project demonstrates how to train an AI agent to play Snake at a high level through sophisticated reward engineering and modern deep reinforcement learning techniques.
 
+![Python](https://img.shields.io/badge/python-3.7+-blue.svg)
+![PyTorch](https://img.shields.io/badge/PyTorch-1.9+-red.svg)
+![Pygame](https://img.shields.io/badge/Pygame-2.0+-green.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+
 ## Demo
 
 TODO: Include a GIF or screenshot of the agent playing Snake
