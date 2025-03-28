@@ -98,7 +98,7 @@ python model_converter.py play --input snake_model_optimized.pt
 ```
 
 This tool is useful when:
-- Sharing models across different hardware platforms (CUDA, Apple M1/M2, CPU)
+- Sharing models across different hardware platforms (CUDA, Apple M-series, CPU)
 - Deploying to systems without PyTorch installed
 - Optimizing model performance for your specific hardware
 - Testing inference speeds before deployment
