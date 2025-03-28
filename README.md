@@ -9,7 +9,7 @@ A reinforcement learning implementation of the classic Snake game using Proximal
 
 ## Demo
 
-TODO: Include a GIF or screenshot of the agent playing Snake
+![Snake AI Demo](./snakeAI.gif)
 
 ## Features
 
@@ -111,6 +111,7 @@ snake/
 ├── model_converter.py        # Utility for model portability and optimization
 ├── snake_model_best.pt       # Best performing model (created during training)
 ├── snake_model_optimized.pt  # Latest model (created during training)
+├── snakeAI.gif               # Demo GIF showing the AI playing Snake
 ├── README.md                 # This file
 └── LICENSE                   # License file
 ```
