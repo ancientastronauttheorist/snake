@@ -107,13 +107,14 @@ This tool is useful when:
 
 ```
 snake/
-├── snake_ppo.py              # Main code file with environment, agent and training logic
-├── model_converter.py        # Utility for model portability and optimization
-├── snake_model_best.pt       # Best performing model (created during training)
-├── snake_model_optimized.pt  # Latest model (created during training)
-├── snakeAI.gif               # Demo GIF showing the AI playing Snake
-├── README.md                 # This file
-└── LICENSE                   # License file
+├── snake_ppo.py                    # Main code file with environment, agent and training logic
+├── model_converter.py              # Utility for model portability and optimization
+├── snake_model_best.pt             # Best performing model (created during training)
+├── snake_model_optimized.pt        # Latest model (created during training)
+├── snake_model_best_portable.npz   # Portable version of best model for cross-platform use
+├── snakeAI.gif                     # Demo GIF showing the AI playing Snake
+├── README.md                       # This file
+└── LICENSE                         # License file
 ```
 
 ## Technical Details
